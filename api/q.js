@@ -24,9 +24,10 @@ export default async function handler(req, res) {
       });
     }
 
+    // ساخت کد ۶ رقمی
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
-    // ذخیره همان کدی که قرار است ایمیل شود در Termux
+    // ذخیره کد روی سرور Termux
     const saveResponse = await fetch(
       "https://19d7ba91de2d8f.lhr.life/save-code",
       {
@@ -41,15 +42,26 @@ export default async function handler(req, res) {
       }
     );
 
-    if (!saveResponse.ok) {
+    const saveText = await saveResponse.text();
+
+    let saveData;
+    try {
+      saveData = JSON.parse(saveText);
+    } catch {
+      saveData = saveText;
+    }
+
+    if (!saveResponse.ok || !saveData.success) {
       return res.status(500).json({
         success: false,
-        error: "Could not save verification code"
+        error: "Save-code Error",
+        status: saveResponse.status,
+        details: saveData
       });
     }
 
-    // ارسال همان کد به ایمیل
-    const response = await fetch(
+    // ارسال همان کد با Sendlib
+    const sendResponse = await fetch(
       "https://sendlib.samueltuoyo.com/api/send",
       {
         method: "POST",
@@ -62,31 +74,32 @@ export default async function handler(req, res) {
           to: email,
           subject: "MimChat Verification Code",
           html: `
-            <div style="font-family:Arial">
+            <div style="font-family:Arial,sans-serif">
               <h2>MimChat</h2>
               <p>Your verification code is:</p>
               <h1>${code}</h1>
+              <p>This code is valid for a limited time.</p>
             </div>
           `
         })
       }
     );
 
-    const text = await response.text();
+    const sendText = await sendResponse.text();
 
-    let data;
+    let sendData;
     try {
-      data = JSON.parse(text);
+      sendData = JSON.parse(sendText);
     } catch {
-      data = text;
+      sendData = sendText;
     }
 
-    if (!response.ok) {
+    if (!sendResponse.ok) {
       return res.status(500).json({
         success: false,
         error: "Sendlib Error",
-        status: response.status,
-        details: data
+        status: sendResponse.status,
+        details: sendData
       });
     }
 
