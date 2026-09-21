@@ -26,6 +26,29 @@ export default async function handler(req, res) {
 
     const code = Math.floor(100000 + Math.random() * 900000).toString();
 
+    // ذخیره همان کدی که قرار است ایمیل شود در Termux
+    const saveResponse = await fetch(
+      "https://19d7ba91de2d8f.lhr.life/save-code",
+      {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json"
+        },
+        body: JSON.stringify({
+          email,
+          code
+        })
+      }
+    );
+
+    if (!saveResponse.ok) {
+      return res.status(500).json({
+        success: false,
+        error: "Could not save verification code"
+      });
+    }
+
+    // ارسال همان کد به ایمیل
     const response = await fetch(
       "https://sendlib.samueltuoyo.com/api/send",
       {
