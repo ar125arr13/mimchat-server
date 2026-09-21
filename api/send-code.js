@@ -22,7 +22,7 @@ export default async function handler(req, res) {
         "Content-Type": "application/json"
       },
       body: JSON.stringify({
-        from: "zahra.davoodi69@gmail.com",
+        from: "abclhmeme@gmail.com",
         to: email,
         subject: "MimChat Verification Code",
         html: `<h2>MimChat</h2><p>Your verification code is:</p><h1>${code}</h1>`
