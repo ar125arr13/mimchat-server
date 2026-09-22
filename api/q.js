@@ -1,40 +1,52 @@
 export default async function handler(req, res) {
+  // CORS
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "POST, OPTIONS");
   res.setHeader("Access-Control-Allow-Headers", "Content-Type");
   res.setHeader("Cache-Control", "no-store");
 
+  // Preflight
   if (req.method === "OPTIONS") {
     return res.status(200).end();
   }
 
+  // فقط POST
   if (req.method !== "POST") {
     return res.status(405).json({
       success: false,
-      error: "Method Not Allowed",
-      step: "method-check"
+      error: "Method Not Allowed"
     });
   }
 
   try {
     const { email } = req.body || {};
 
-    if (!email) {
+    // بررسی ایمیل
+    if (!email || typeof email !== "string") {
       return res.status(400).json({
         success: false,
-        error: "Email is required",
-        step: "input"
+        error: "Email is required"
       });
     }
 
     const cleanEmail = email.trim().toLowerCase();
 
-    // ساخت کد
+    if (!cleanEmail) {
+      return res.status(400).json({
+        success: false,
+        error: "Email is required"
+      });
+    }
+
+    // ساخت کد 6 رقمی
     const code = String(
       Math.floor(100000 + Math.random() * 900000)
     );
 
-    // مرحله 1: ذخیره کد در Termux
+    // -----------------------------
+    // مرحله 1: ذخیره کد در Node.js
+    // -----------------------------
+
     let saveResponse;
 
     try {
@@ -54,8 +66,8 @@ export default async function handler(req, res) {
     } catch (error) {
       return res.status(502).json({
         success: false,
-        error: "Save-code Connection Error",
-        step: "save-code",
+        stage: "save-code",
+        error: "Could not connect to verification server",
         details: error.message
       });
     }
@@ -65,14 +77,27 @@ export default async function handler(req, res) {
     if (!saveResponse.ok) {
       return res.status(502).json({
         success: false,
+        stage: "save-code",
         error: "Save-code Error",
-        step: "save-code",
         status: saveResponse.status,
         details: saveText
       });
     }
 
+    // -----------------------------
     // مرحله 2: ارسال ایمیل با Sendlib
+    // -----------------------------
+
+    const sendlibKey = process.env.SENDLIB_API_KEY;
+
+    if (!sendlibKey) {
+      return res.status(500).json({
+        success: false,
+        stage: "sendlib",
+        error: "SENDLIB_API_KEY is not configured on Vercel"
+      });
+    }
+
     let sendResponse;
 
     try {
@@ -81,19 +106,23 @@ export default async function handler(req, res) {
         {
           method: "POST",
           headers: {
-            "Authorization":
-              `Bearer ${process.env.SENDLIB_API_KEY}`,
+            "Authorization": `Bearer ${sendlibKey}`,
             "Content-Type": "application/json"
           },
           body: JSON.stringify({
             from: "abclhmeme@gmail.com",
             to: cleanEmail,
-            subject: "MimChat vVerification Code",
+            subject: "MimChat Verification Code",
             html: `
               <div style="font-family:Arial,sans-serif">
                 <h2>MimChat</h2>
+
                 <p>Your verification code is:</p>
-                <h1>${code}</h1>
+
+                <h1 style="letter-spacing:6px">
+                  ${code}
+                </h1>
+
                 <p>This code is valid for 5 minutes.</p>
               </div>
             `
@@ -103,8 +132,8 @@ export default async function handler(req, res) {
     } catch (error) {
       return res.status(502).json({
         success: false,
-        error: "Sendlib Connection Error",
-        step: "sendlib",
+        stage: "sendlib",
+        error: "Could not connect to Sendlib",
         details: error.message
       });
     }
@@ -114,24 +143,27 @@ export default async function handler(req, res) {
     if (!sendResponse.ok) {
       return res.status(502).json({
         success: false,
+        stage: "sendlib",
         error: "Sendlib Error",
-        step: "sendlib",
         status: sendResponse.status,
         details: sendText
       });
     }
 
+    // -----------------------------
+    // موفق
+    // -----------------------------
+
     return res.status(200).json({
       success: true,
-      message: "Verification email sent",
-      step: "complete"
+      message: "Verification email sent"
     });
 
   } catch (error) {
     return res.status(500).json({
       success: false,
+      stage: "unknown",
       error: "Server Error",
-      step: "unknown",
       details: error.message
     });
   }
