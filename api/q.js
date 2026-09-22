@@ -82,7 +82,7 @@ export default async function handler(req, res) {
           html: `
             <div style="font-family:Arial,sans-serif">
               <h2>MimChat</h2>
-              <p>Your verification code is:</p>
+              <p>YOur verification code is:</p>
               <h1>${code}</h1>
               <p>This code is valid for 5 minutes.</p>
             </div>
