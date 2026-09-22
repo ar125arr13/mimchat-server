@@ -24,10 +24,12 @@ export default async function handler(req, res) {
       });
     }
 
-    // ساخت کد ۶ رقمی
-    const code = Math.floor(100000 + Math.random() * 900000).toString();
+    // کد دقیقاً ۶ رقمی
+    const code = String(
+      Math.floor(100000 + Math.random() * 900000)
+    );
 
-    // ذخیره کد روی سرور Termux
+    // ذخیره کد در Termux
     const saveResponse = await fetch(
       "https://c934de107f389f.lhr.life/save-code",
       {
@@ -36,7 +38,7 @@ export default async function handler(req, res) {
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
-          email,
+          email: email.trim().toLowerCase(),
           code
         })
       }
@@ -45,14 +47,17 @@ export default async function handler(req, res) {
     const saveText = await saveResponse.text();
 
     let saveData;
+
     try {
       saveData = JSON.parse(saveText);
     } catch {
-      saveData = saveText;
+      saveData = {
+        raw: saveText
+      };
     }
 
     if (!saveResponse.ok || !saveData.success) {
-      return res.status(500).json({
+      return res.status(502).json({
         success: false,
         error: "Save-code Error",
         status: saveResponse.status,
@@ -60,25 +65,26 @@ export default async function handler(req, res) {
       });
     }
 
-    // ارسال همان کد با Sendlib
+    // ارسال همان کد توسط Sendlib
     const sendResponse = await fetch(
       "https://sendlib.samueltuoyo.com/api/send",
       {
         method: "POST",
         headers: {
-          "Authorization": `Bearer ${process.env.SENDLIB_API_KEY}`,
+          "Authorization":
+            `Bearer ${process.env.SENDLIB_API_KEY}`,
           "Content-Type": "application/json"
         },
         body: JSON.stringify({
           from: "abclhmeme@gmail.com",
-          to: email,
+          to: email.trim().toLowerCase(),
           subject: "MimChat Verification Code",
           html: `
             <div style="font-family:Arial,sans-serif">
               <h2>MimChat</h2>
               <p>Your verification code is:</p>
               <h1>${code}</h1>
-              <p>This code is valid for a limited time.</p>
+              <p>This code is valid for 5 minutes.</p>
             </div>
           `
         })
@@ -88,14 +94,17 @@ export default async function handler(req, res) {
     const sendText = await sendResponse.text();
 
     let sendData;
+
     try {
       sendData = JSON.parse(sendText);
     } catch {
-      sendData = sendText;
+      sendData = {
+        raw: sendText
+      };
     }
 
     if (!sendResponse.ok) {
-      return res.status(500).json({
+      return res.status(502).json({
         success: false,
         error: "Sendlib Error",
         status: sendResponse.status,
