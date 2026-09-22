@@ -29,7 +29,7 @@ export default async function handler(req, res) {
 
     // ذخیره کد روی سرور Termux
     const saveResponse = await fetch(
-      "https://19d7ba91de2d8f.lhr.life/save-code",
+      "https://c934de107f389f.lhr.life/save-code",
       {
         method: "POST",
         headers: {
