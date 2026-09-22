@@ -51,7 +51,7 @@ export default async function handler(req, res) {
 
     try {
       saveResponse = await fetch(
-        "https://c934de107f389f.lhr.life/save-code",
+        "https://70fa6782c3cbec.lhr.life",
         {
           method: "POST",
           headers: {
