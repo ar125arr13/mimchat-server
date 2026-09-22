@@ -88,7 +88,7 @@ export default async function handler(req, res) {
           body: JSON.stringify({
             from: "abclhmeme@gmail.com",
             to: cleanEmail,
-            subject: "MimChat Verification Code",
+            subject: "MimChat vVerification Code",
             html: `
               <div style="font-family:Arial,sans-serif">
                 <h2>MimChat</h2>
